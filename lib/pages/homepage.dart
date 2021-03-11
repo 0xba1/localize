@@ -10,13 +10,13 @@ class StateNotifier {
   }
 }
 
-StateNotifier stateNotifier = StateNotifier();
-
 class HomePage extends StatelessWidget {
   const HomePage({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    StateNotifier stateNotifier = StateNotifier();
+
     LocationData _locationData;
     String errorData;
     return Scaffold(
@@ -40,67 +40,64 @@ class HomePage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          stateNotifier.changeState("loading");
+          onPressed: () async {
+            stateNotifier.changeState("loading");
 
-          Location location = Location();
+            Location location = Location();
 
-          bool _serviceEnabled;
-          PermissionStatus _permissionGranted;
+            bool _serviceEnabled;
+            PermissionStatus _permissionGranted;
 
-          _serviceEnabled = await location.serviceEnabled();
-          if (!_serviceEnabled) {
-            _serviceEnabled = await location.requestService();
+            _serviceEnabled = await location.serviceEnabled();
             if (!_serviceEnabled) {
-              errorData = "Location Not Enabled";
-              stateNotifier.changeState("error");
-              return;
+              _serviceEnabled = await location.requestService();
+              if (!_serviceEnabled) {
+                errorData = "Location Not Enabled";
+                stateNotifier.changeState("error");
+                return;
+              }
             }
-          }
 
-          _permissionGranted = await location.hasPermission();
-          if (_permissionGranted == PermissionStatus.denied) {
-            _permissionGranted = await location.requestPermission();
-            if (_permissionGranted != PermissionStatus.granted) {
-              errorData = "Permission denied";
-              stateNotifier.changeState("error");
-              return;
+            _permissionGranted = await location.hasPermission();
+            if (_permissionGranted == PermissionStatus.denied) {
+              _permissionGranted = await location.requestPermission();
+              if (_permissionGranted != PermissionStatus.granted) {
+                errorData = "Permission denied";
+                stateNotifier.changeState("error");
+                return;
+              }
             }
-          }
 
-          _locationData = await location.getLocation();
-          stateNotifier.changeState("done");
-        },
-        label: Text("Localize"),
-      ),
+            _locationData = await location.getLocation();
+            stateNotifier.changeState("done");
+          },
+          label: Text("Localize"),
+          icon: Icon(Icons.location_on)),
       body: ValueListenableBuilder(
         valueListenable: stateNotifier.state,
         builder: (context, value, child) {
           if (value == "initial") return Container();
-          if (value == "loading") return CircularProgressIndicator();
+          if (value == "loading")
+            return Center(child: CircularProgressIndicator());
           if (value == "error")
             return Center(
-              child: Text("$errorData"),
+              child: Opacity(
+                child: Text("$errorData"),
+                opacity: 0.5,
+              ),
             );
-          return Column();
+          return Center(
+            child: Column(
+              children: <Widget>[
+                Text("Latitude: ${_locationData.latitude}"),
+                Text("Longitude: ${_locationData.longitude}"),
+                Text("Altitude: ${_locationData.altitude}m"),
+                Text(
+                    "Time: ${DateTime.fromMillisecondsSinceEpoch(_locationData.time.toInt())}"),
+              ],
+            ),
+          );
         },
-        child: Column(
-          children: <Widget>[
-            Container(
-              child: Text("Latitude: ${_locationData.latitude}"),
-            ),
-            Container(
-              child: Text("Longitude: ${_locationData.longitude}"),
-            ),
-            Container(
-              child: Text("Altitude: ${_locationData.altitude}"),
-            ),
-            Container(
-              child: Text(
-                  "Time: ${DateTime.fromMillisecondsSinceEpoch(_locationData.time.toInt())}"),
-            ),
-          ],
-        ),
       ),
     );
   }
