@@ -84,7 +84,7 @@ class HomePage extends StatelessWidget {
               child: Opacity(
                 child: Text("$errorData"),
                 opacity: 0.5,
-              ),
+              ), 
             );
           return Center(
             child: Column(
